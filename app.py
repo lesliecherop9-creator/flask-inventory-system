@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
@@ -23,6 +23,14 @@ inventory = [
     },
 ]
 
+def get_next_id():
+    highest = 0
+    for item in inventory:
+        if item["id"] > highest:
+            highest = item["id"]
+    return highest + 1
+
+
 
 @app.route("/inventory", methods=["GET"])
 def get_inventory():
@@ -36,6 +44,35 @@ def get_item(item_id):
             return jsonify(item), 200
     return jsonify({"error": "Item not found"}), 404
 
+
+
+@app.route("/inventory", methods=["POST"])
+def add_item():
+    data = request.get_json()
+
+    # Check that the client sent a product name
+    if not data or "product_name" not in data:
+        return jsonify({"error": "product_name is required"}), 400
+
+    price = data.get("price", 0)
+    stock = data.get("stock", 0)
+
+    # Check that price and stock are numbers
+    if not isinstance(price, (int, float)) or not isinstance(stock, int):
+        return jsonify({"error": "price must be a number and stock a whole number"}), 400
+
+    new_item = {
+        "id": get_next_id(),
+        "barcode": data.get("barcode", ""),
+        "product_name": data["product_name"],
+        "brands": data.get("brands", ""),
+        "ingredients_text": data.get("ingredients_text", ""),
+        "price": price,
+        "stock": stock,
+    }
+
+    inventory.append(new_item)
+    return jsonify(new_item), 201
 
 if __name__ == "__main__":
     app.run(debug=True)
