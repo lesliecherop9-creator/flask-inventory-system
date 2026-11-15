@@ -74,5 +74,42 @@ def add_item():
     inventory.append(new_item)
     return jsonify(new_item), 201
 
+
+@app.route("/inventory/<int:item_id>", methods=["PATCH"])
+def update_item(item_id):
+    # Find the item
+    found_item = None
+    for item in inventory:
+        if item["id"] == item_id:
+            found_item = item
+
+    if found_item is None:
+        return jsonify({"error": "Item not found"}), 404
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data given"}), 400
+
+    if "price" in data and not isinstance(data["price"], (int, float)):
+        return jsonify({"error": "price must be a number"}), 400
+    if "stock" in data and not isinstance(data["stock"], int):
+        return jsonify({"error": "stock must be a whole number"}), 400
+
+    for field in ["product_name", "brands", "ingredients_text", "barcode", "price", "stock"]:
+        if field in data:
+            found_item[field] = data[field]
+
+    return jsonify(found_item), 200
+
+
+@app.route("/inventory/<int:item_id>", methods=["DELETE"])
+def delete_item(item_id):
+    for item in inventory:
+        if item["id"] == item_id:
+            inventory.remove(item)
+            return jsonify({"message": "Item deleted"}), 200
+    return jsonify({"error": "Item not found"}), 404
+
+
 if __name__ == "__main__":
     app.run(debug=True)
